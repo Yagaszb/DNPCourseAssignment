@@ -49,11 +49,18 @@ public class PostInMemoryRepository : IPostRepository
 
     public Task<Post> GetSingleAsync(int id)
     {
-        throw new NotImplementedException();
+        Post? post = posts.SingleOrDefault(p => p.Id == id);
+        if (post is null)
+        {
+            throw new InvalidOperationException(
+                $"Post with ID '{id}' not found");
+        }
+
+        return Task.FromResult(post);
     }
 
     public IQueryable<Post> GetMany()
     {
-        throw new NotImplementedException();
+        return posts.AsQueryable();
     }
 }
