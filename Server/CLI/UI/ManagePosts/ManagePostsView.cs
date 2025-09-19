@@ -20,6 +20,7 @@ public class ManagePostsView(
             Console.WriteLine("2. View All Posts");
             Console.WriteLine("3. Update Post");
             Console.WriteLine("4. Delete Post");
+            Console.WriteLine("5. View Specific Post");
             Console.WriteLine("0. Back to Main Menu");
             Console.Write("Select an option: ");
             string? input = Console.ReadLine();
