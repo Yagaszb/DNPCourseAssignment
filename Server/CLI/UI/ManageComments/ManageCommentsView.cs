@@ -60,6 +60,12 @@ public class ManageCommentsView(IUserRepository userRepository, IPostRepository 
                     await deleteSpecificCommentOnPostView.ShowAsync();
                     break;
                 }
+                case "6":
+                {
+                    UpdateCommentView updateCommentView = new UpdateCommentView(PostRepository, CommentRepository);
+                    await updateCommentView.ShowAsync();
+                    break;
+                }
                 case "0":
                 {
                     return;
