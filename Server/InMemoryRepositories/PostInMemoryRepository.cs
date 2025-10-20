@@ -59,6 +59,18 @@ public class PostInMemoryRepository : IPostRepository
         return Task.FromResult(post);
     }
 
+    public Task<Post> GetSingleAsync(string title)
+    {
+        Post? post = posts.SingleOrDefault(p => p.Title == title);
+        if (post is null)
+        {
+            throw new InvalidOperationException(
+                $"Post with title '{title}' not found");
+        }
+
+        return Task.FromResult(post);
+    }
+    
     public IQueryable<Post> GetMany()
     {
         return posts.AsQueryable();

@@ -74,6 +74,20 @@ public class PostFileRepository : IPostRepository
         return post;
     }
 
+    public async Task<Post> GetSingleAsync(string title)
+    {
+        string postAsJson = await File.ReadAllTextAsync(filePath);
+        List<Post> posts = JsonSerializer.Deserialize<List<Post>>(postAsJson) !;
+        Post? post = posts.SingleOrDefault(p => p.Title == title);
+        if (post is null)
+        {
+            throw new InvalidOperationException(
+                $"Post with title '{title}' not found");
+        }
+
+        return post;
+    }
+
     public IQueryable<Post> GetMany()
     {
         string postAsJson = File.ReadAllTextAsync(filePath).Result;

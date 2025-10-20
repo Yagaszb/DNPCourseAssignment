@@ -50,13 +50,10 @@ public class AddCommentToPostView(IUserRepository userRepository, IPostRepositor
             body = Console.ReadLine();
         }
 
-        var newComment = new Comment
-        {
-            PostId = postId,
-            UserId = userId,
-            Body = body,
-            Id = CommentRepository.GetMany().Any() ? CommentRepository.GetMany().Max(p => p.Id) + 1 : 1
-        };
+        var newComment = new Comment(postId: postId, userId: userId, body: body,
+            id: CommentRepository.GetMany().Any()
+                ? CommentRepository.GetMany().Max(p => p.Id) + 1
+                : 1);
 
         await CommentRepository.AddAsync(newComment);
         Console.WriteLine("Comment added successfully.");
