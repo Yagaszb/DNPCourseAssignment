@@ -1,0 +1,127 @@
+﻿@page "/users"
+@using BlazorApp.Service
+@using ApiContracts.UserDTOs
+@inject IUserService UserService
+@inject IJSRuntime JS
+
+<PageTitle>Users</PageTitle>
+
+<h3>Users</h3>
+<button class="btn btn-primary" @onclick="GetUsers">Get Users</button>
+<div>
+    <h3>Create a new user:</h3>
+    <div>
+        <label>Username: </label>
+        <input type="text" @bind="createUserUserName">
+    </div>
+    <div>
+        <label>Password: </label>
+        <input type="text" @bind="createUserPassword">
+    </div>
+    <button class="btn btn-primary" @onclick="AddUser">Add User</button>
+</div>
+
+
+@if (users is null)
+{
+    <p>Click the button to load users.</p>
+}
+else if (users.Count == 0)
+{
+    <p>No users found.</p>
+}
+else
+{
+    <ul class="list-group mt-3">
+        @foreach (var user in users)
+        {
+            <li class="list-group-item" id="@user.Id">
+                @user.Id - @user.UserName
+                <button class="btn btn-primary" @onclick="() => EditUser(user)">Edit</button>
+                <button class="btn btn-primary" @onclick="() => DeleteUser(user)">Delete</button>
+                @if (selectedUser != null && selectedUser.Id == user.Id)
+                {
+                    <div>
+                        <h3>Update the new user:</h3>
+                        <div>
+                            <label>Username: </label>
+                            <input type="text" @bind="editUserUserName"></input>
+                        </div>
+                        <div>
+                            <label>Password: </label>
+                            <input type="text" @bind="editUserPassword">
+                        </div>
+                        <button class="btn btn-primary" @onclick="SaveEditedUser">Save User</button>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+
+    private List<UserDTO?> users;
+    private string createUserUserName = String.Empty;
+    private string createUserPassword = String.Empty;
+    private string editUserUserName = String.Empty;
+    private string editUserPassword = String.Empty;
+    private UserDTO selectedUser;
+    
+    private async Task GetUsers()
+    {
+        await JS.InvokeVoidAsync("console.log", "Loading users from Blazor Server…");
+        users = (await UserService.GetAllUsersAsync())
+            .OrderBy(u => u.Id)
+            .ToList();
+        await JS.InvokeVoidAsync("console.log", $"Loaded {users.Count} users");
+    }
+
+    private async Task AddUser()
+    {
+        await JS.InvokeVoidAsync("console.log", "Creating user from Blazor Server…");
+        var newUser = new CreateUserDTO
+        {
+            UserName = createUserUserName,
+            Password = createUserPassword
+        };
+        var createdUser = await UserService.AddUserAsync(newUser);
+        await JS.InvokeVoidAsync("console.log", $"Created user with ID {createdUser.Id}");
+        await GetUsers();
+    }
+    private async Task EditUser(UserDTO user)
+    {
+        await JS.InvokeVoidAsync("console.log", "Edit user clicked");
+        if (selectedUser is null)
+        {
+            selectedUser = user;
+        }
+        else
+        {
+            selectedUser = null;
+        }
+    }
+    
+    private async Task SaveEditedUser()
+    {
+        await JS.InvokeVoidAsync("console.log", "Saving edited user from Blazor Server…");
+        var updateUser = new UpdateUserDTO
+        {
+            Id = selectedUser.Id,
+            UserName = editUserUserName,
+            Password = editUserPassword
+        };
+        var updatedUser = await UserService.UpdateUserAsync(updateUser.Id, updateUser);
+        await JS.InvokeVoidAsync("console.log", $"Updated user with ID {updatedUser.Id}");
+        selectedUser = null;
+        await GetUsers();
+    }
+
+    private async Task DeleteUser(UserDTO user)
+    {
+        await JS.InvokeVoidAsync("console.log", "Deleting user from Blazor Server...");
+        await UserService.DeleteUserAsync(user.Id);
+        await JS.InvokeVoidAsync("console.log", $"Deleted user with ID {user.Id}");
+        await GetUsers();
+    }
+}

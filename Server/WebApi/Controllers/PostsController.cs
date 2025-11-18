@@ -28,49 +28,73 @@ public class PostsController(IPostRepository postRepository) : ControllerBase
             
             return Ok(response);
         }
+        catch (KeyNotFoundException)
+        {
+            return NotFound($"Post with ID {postId} not found.");
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return NotFound(e);
+            return StatusCode(500, e.Message);
         }
     }
 
-    [HttpGet("{userId:int}")]
+    [HttpGet("users/{userId:int}")]
     public async Task<ActionResult<List<PostDTO>>> GetPostsByUserId
     (
         [FromRoute] int userId
     )
     {
-        List<PostDTO> posts = postRepository.GetMany()
-            .Where(post => post.UserId == userId)
-            .Select(post => new PostDTO
-            {
-                PostId = post.Id,
-                Title = post.Title,
-                Body = post.Body,
-                UserId = post.UserId
-            })
-            .ToList();
-        return Ok(posts);
+        try
+        {
+            List<PostDTO> posts = postRepository.GetMany()
+                .Where(post => post.UserId == userId)
+                .Select(post => new PostDTO
+                {
+                    PostId = post.Id,
+                    Title = post.Title,
+                    Body = post.Body,
+                    UserId = post.UserId
+                })
+                .ToList();
+            return Ok(posts);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound($"Posts for User with ID {userId} not found.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
     [HttpGet]
     public async Task<ActionResult<List<PostDTO>>> GetAllPosts()
     {
-        List<PostDTO> posts = postRepository.GetMany()
-            .Select(post => new PostDTO
-            {
-                PostId = post.Id,
-                Title = post.Title,
-                Body = post.Body,
-                UserId = post.UserId
-            })
-            .ToList();
-        return Ok(posts);
+        try
+        {
+            List<PostDTO> posts = postRepository.GetMany()
+                .Select(post => new PostDTO
+                {
+                    PostId = post.Id,
+                    Title = post.Title,
+                    Body = post.Body,
+                    UserId = post.UserId
+                })
+                .ToList();
+            return Ok(posts);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return StatusCode(500, e.Message);
+        }
     }
 
-    [HttpGet]
-    public async Task<ActionResult<List<PostDTO>>> GetPostByTitle
+    [HttpGet("title")]
+    public async Task<ActionResult<List<PostDTO>>> GetPostsByTitle
     (
         [FromQuery] string title
     )
@@ -114,7 +138,14 @@ public class PostsController(IPostRepository postRepository) : ControllerBase
                 UserId = postToUpdate.UserId
             };
             await postRepository.UpdateAsync(post);
-            return NoContent();
+            PostDTO postDTO = new()
+            {
+                PostId = post.Id,
+                Title  = post.Title,
+                Body = post.Body,
+                UserId = post.UserId
+            };
+            return Ok(postDTO);
         }
         catch (Exception e)
         {
@@ -126,7 +157,7 @@ public class PostsController(IPostRepository postRepository) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PostDTO>> AddPost
     (
-        [FromBody] PostDTO postToAdd
+        [FromBody] CreatePostDTO postToAdd
     )
     {
         try

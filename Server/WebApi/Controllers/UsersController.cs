@@ -34,6 +34,24 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
     }
     
     [HttpGet]
+    public ActionResult<List<UserDTO>> GetUsers([FromQuery] string? userName)
+    {
+        var query = userRepository.GetMany();
+
+        if (!string.IsNullOrWhiteSpace(userName))
+            query = query.Where(u => 
+                u.Username.Equals(userName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        var users = query.Select(u => new UserDTO { Id = u.Id, UserName = u.Username }).ToList();
+
+        /*if (users.Count == 0 && !string.IsNullOrWhiteSpace(userName))
+            return NotFound($"User '{userName}' not found.");*/ //could be empty 
+
+        return Ok(users);
+    }
+
+    
+    /*[HttpGet("all")]
     public async Task<ActionResult<List<UserDTO>>> GetAllUsers()
     {
         List<UserDTO> response = userRepository.GetMany()
@@ -44,9 +62,9 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
             })
             .ToList();
         return Ok(response);
-    }
+    }*/
     
-    [HttpGet]
+    /*[HttpGet]
     public async Task<ActionResult<List<UserDTO>>> GetUsersByUserName
     (
         [FromQuery] string? userName
@@ -67,6 +85,7 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
             return NotFound($"User with name {userName} not found.");
         return Ok(response);
     }
+    */
     
     [HttpPost]
     public async Task<ActionResult<UserDTO>> AddUser
@@ -86,10 +105,14 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
             };
             return Created($"/users/{response.Id}", response);
         }
+        catch (ArgumentException ex) // username taken
+        {
+            return Conflict(ex.Message);
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return StatusCode(404, e.Message);
+            return StatusCode(500, e.Message);
         }
     }
     
@@ -112,8 +135,10 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
             }
             existing.Username = request.UserName;
             existing.Password = request.Password;
-            await userRepository.UpdateAsync(existing);
-            return Ok();
+            User updated = await userRepository.UpdateAsync(existing);
+
+            var response = new UserDTO { Id = updated.Id, UserName = updated.Username };
+            return Ok(response);
         }
         catch (Exception e)
         {
@@ -134,10 +159,14 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
             await userRepository.DeleteAsync(userId);
             return Ok();
         }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return StatusCode(404, e.Message);
+            return StatusCode(500, e.Message);
         }
     }
     

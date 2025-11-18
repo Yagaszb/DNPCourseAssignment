@@ -1,0 +1,238 @@
+﻿@page "/posts"
+@using ApiContracts.CommentDTOs
+@using BlazorApp.Service
+@using ApiContracts.PostDTOs
+@using ApiContracts.UserDTOs
+@inject IPostService PostService
+@inject ICommentService CommentService
+@inject IUserService UserService
+@inject IJSRuntime JS
+
+<PageTitle>Posts</PageTitle>
+<h3>Posts</h3>
+<button class="btn btn-primary" @onclick="GetPosts">Get Posts</button>
+<div>
+    <h3>Create a new Post:</h3>
+    <div>
+        <label>Title: </label>
+        <input type="text" @bind="createPostTitle">
+    </div>
+    <div>
+        <label>Body: </label>
+        <textarea @bind="createPostBody"></textarea>
+    </div>
+    <button class="btn btn-primary" @onclick="AddPost">Add Post</button>
+</div>
+@if (posts is null)
+{
+    <p>Click the button to load posts.</p>
+}
+else if (posts.Count == 0)
+{
+    <p>No posts found.</p>
+}
+else
+{
+    <ul class="list-group mt-3">
+        @foreach (var post in posts)
+        {
+            <li class="list-group-item" id="@post.PostId">
+                <h5>@post.PostId) @post.Title</h5>
+                <button class="btn btn-primary" @onclick="() => EditPost(post)">Edit</button>
+                <button class="btn btn-primary" @onclick="() => DeletePost(post)">Delete</button>
+                <h6>Written by: @users.Find(u => u.Id == post.UserId)?.UserName</h6>
+                <p>@post.Body</p>
+                <div>
+                    <input type="text" @bind="createCommentBody" placeholder="Body...">
+                    <button class="btn btn-primary" @onclick="() => AddComment(post.PostId)">Add Comment</button>
+                </div>
+                @foreach (var comment in comments.Where(c => c.PostId == post.PostId))
+                {
+                    <p>@comment.Body</p>
+                    <p>Written by: @users.Find(u => u.Id == comment.UserId)?.UserName</p>
+                    <button class="btn btn-secondary" @onclick="() => EditComment(comment)">Edit</button>
+                    <button class="btn btn-secondary" @onclick="() => DeleteComment(comment)">Delete</button>
+
+                    @if (selectedComment != null && selectedComment.CommentId == comment.CommentId)
+                    {
+                        <div>
+                            <h3>Update Comment:</h3>
+                            <div>
+                                <label>Body: </label>
+                                <textarea @bind="editCommentBody"></textarea>
+                            </div>
+                            <button class="btn btn-primary" @onclick="SaveEditedComment">Save Comment</button>
+                        </div>
+                    }
+                }
+            @if (selectedPost != null && selectedPost.PostId == post.PostId)
+                {
+                    <div>
+                        <h3>Update Post:</h3>
+                        <div>
+                            <label>Title: </label>
+                            <input type="text" @bind="editPostTitle"></input>
+                        </div>
+                        <div>
+                            <label>Body: </label>
+                            <textarea @bind="editPostBody"></textarea>
+                        </div>
+                        <button class="btn btn-primary" @onclick="SaveEditedPost">Save Post</button>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+}
+
+
+
+@code {
+    private List<PostDTO>? posts;
+    private List<UserDTO>? users;
+    private List<CommentDTO>? comments;
+    private string createPostTitle = string.Empty;
+    private string createPostBody = string.Empty;
+    private string createCommentBody = string.Empty;
+    private string editPostTitle = string.Empty;
+    private string editPostBody = string.Empty;
+    private string editCommentBody = string.Empty;
+    private PostDTO? selectedPost;
+    private CommentDTO? selectedComment;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUsers();
+        await GetPosts();
+        await GetComments();
+    }
+
+    private async Task GetComments()
+    {
+        comments = await CommentService.GetAllCommentsAsync();
+        await JS.InvokeVoidAsync("console.log", "Comments: " + comments);
+    }
+
+    private async Task GetUsers()
+    {
+        users =  await UserService.GetAllUsersAsync();
+        await JS.InvokeVoidAsync("console.log", "Users: "+users);
+    }
+    
+    private async Task GetPosts()
+    {
+        posts = await PostService.GetAllPostsAsync();
+        await JS.InvokeVoidAsync("console.log", "Posts: "+posts);
+    }
+    
+    private async Task AddPost()
+    {
+        var newPost = new CreatePostDTO
+        {
+            Title = createPostTitle,
+            Body = createPostBody,
+            UserId = users != null && users.Count > 0 ? users[0].Id : 1
+        };
+        await JS.InvokeVoidAsync("console.log", "Adding Post: "+newPost);
+        await PostService.AddPostAsync(newPost);
+        createPostTitle = string.Empty;
+        createPostBody = string.Empty;
+        await GetPosts();
+    }
+
+    private async Task DeletePost(PostDTO post)
+    {
+        await JS.InvokeVoidAsync("console.log", "Deleting Post: "+post);
+        await PostService.DeletePostAsync(post.PostId);
+        await JS.InvokeVoidAsync("console.log", "Deleted Post: "+post);
+        await GetPosts();
+    }
+
+    private async Task EditPost(PostDTO post)
+    {
+        await JS.InvokeVoidAsync("console.log", "Edit post clicked");
+        if (selectedPost is null)
+        {
+            selectedPost = post;
+            editPostTitle = post.Title;
+            editPostBody  = post.Body;
+        }
+        else
+        {
+            selectedPost = null;
+            editPostBody = string.Empty;
+            editPostTitle = string.Empty;
+        }
+    }
+
+    private async Task SaveEditedPost()
+    {
+        await JS.InvokeVoidAsync("console.log", "Saving edited post from Blazor Server…");
+        var updatePost = new PostDTO()
+        {
+            PostId = selectedPost.PostId,
+            Title = editPostTitle,
+            Body = editPostBody,
+            UserId = selectedPost.UserId
+        };
+        var updatedPost = await PostService.UpdatePostAsync(updatePost.PostId, updatePost);
+        await JS.InvokeVoidAsync("console.log", $"Updated user with ID {updatedPost.PostId}");
+        editPostBody = string.Empty;
+        editPostTitle = string.Empty;
+        selectedPost = null;
+        await GetPosts();
+    }
+
+    private async Task AddComment(int postId)
+    {
+        CreateCommentDTO createComment = new()
+        {
+            Body = createCommentBody,
+            PostId = postId,
+            UserId = 1
+        };
+        await JS.InvokeVoidAsync("console.log", "Adding comment...");
+        await CommentService.AddCommentAsync(createComment);
+        createCommentBody = string.Empty;
+        await GetComments();
+    }
+
+    private async Task DeleteComment(CommentDTO commentDto)
+    {
+        await JS.InvokeVoidAsync("console.log", "Deleting Comment: "+commentDto);
+        await CommentService.DeleteCommentAsync(commentDto.CommentId);
+        await JS.InvokeVoidAsync("console.log", "Deleted Comment: "+commentDto);
+        await GetComments();
+    }
+
+    private async Task EditComment(CommentDTO commentDto)
+    {
+        await JS.InvokeVoidAsync("console.log", "Edit comment clicked");
+        if (selectedComment is null)
+        {
+            selectedComment = commentDto;
+            editCommentBody = commentDto.Body;
+        }
+        else
+        {
+            selectedComment = null;
+            editCommentBody = string.Empty;
+        }
+    }
+
+    private async Task SaveEditedComment()
+    {
+        CommentDTO commentDto = new()
+        {
+            CommentId = selectedComment.CommentId,
+            Body = editCommentBody,
+            PostId = selectedComment.PostId,
+            UserId = selectedComment.UserId
+        };
+        await JS.InvokeVoidAsync("console.log", "Saving comment...");
+        await CommentService.UpdateCommentAsync(commentDto.CommentId, commentDto);
+        editCommentBody = string.Empty;
+        selectedComment = null;
+        await GetComments();
+    }
+}

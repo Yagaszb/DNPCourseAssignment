@@ -26,15 +26,19 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
             return Ok(response);
 
         }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return NotFound();
+            return StatusCode(500, e.Message);
         }
     }
     
-    [HttpGet("/posts/{postId:int}/comments")]
-    public async Task<ActionResult<List<CommentDTO>>> GetCommentsByPostId
+    [HttpGet("~/posts/{postId:int}/comments")]
+    public ActionResult<List<CommentDTO>> GetCommentsByPostId
         ([FromRoute] int postId)
     {
         List<CommentDTO> comments = commentRepository.GetMany()
@@ -48,15 +52,15 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
             })
             .ToList();
         
-        if (comments.Count == 0 )
+        /*if (comments.Count == 0 )
         {
             return NotFound();
-        }
+        }*/
         return Ok(comments);
     }
 
-    [HttpGet("/users/{userId:int}/comments")]
-    public async Task<ActionResult<List<CommentDTO>>> GetCommentsByUserId
+    [HttpGet("~/users/{userId:int}/comments")]
+    public ActionResult<List<CommentDTO>> GetCommentsByUserId
         ([FromRoute] int userId)
     {
         List<CommentDTO> comments = commentRepository.GetMany()
@@ -70,15 +74,15 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
             })
             .ToList();
 
-        if (comments.Count == 0)
+        /*if (comments.Count == 0)
         {
             return NotFound();
-        }
+        }*/
         return Ok(comments);
     }
 
-    [HttpGet("/all-comments")]
-    public async Task<ActionResult<List<CommentDTO>>> GetAllComments()
+    [HttpGet]
+    public ActionResult<List<CommentDTO>> GetAllComments()
     {
         List<CommentDTO> comments = commentRepository.GetMany()
             .Select(comment => new CommentDTO
@@ -90,15 +94,15 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
             })
             .ToList();
 
-        if (comments.Count == 0)
+        /*if (comments.Count == 0)
         {
             return NotFound();
-        }
+        }*/
         return Ok(comments);   
     }
     
     [HttpPut("{commentId:int}")]
-    public async Task<ActionResult> UpdateComment
+    public async Task<ActionResult<CommentDTO>> UpdateComment
         ([FromRoute] int commentId, [FromBody] CommentDTO updatedComment)
     {
         if (commentId != updatedComment.CommentId)
@@ -106,24 +110,34 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
 
         try
         {
-            Comment existingComment = await commentRepository.GetSingleAsync(commentId);
+            Comment existingComment =
+                await commentRepository.GetSingleAsync(commentId);
             existingComment.Body = updatedComment.Body;
             existingComment.PostId = updatedComment.PostId;
             existingComment.UserId = updatedComment.UserId;
 
-            await commentRepository.UpdateAsync(existingComment);
-            return NoContent();
+            var saved = await commentRepository.UpdateAsync(existingComment);
+            var dto = new CommentDTO
+            {
+                CommentId = saved.Id, Body = saved.Body, PostId = saved.PostId,
+                UserId = saved.UserId
+            };
+            return Ok(dto);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return NotFound();
+            return StatusCode(500, e.Message);
         }
     }
 
     [HttpPost]
     public async Task<ActionResult<CommentDTO>> AddComment
-        ([FromBody] CommentDTO newComment)
+        ([FromBody] CreateCommentDTO newComment)
     {
         Comment comment = new Comment(newComment.Body, newComment.PostId, newComment.UserId);
         Comment created = await commentRepository.AddAsync(comment);
@@ -144,12 +158,16 @@ public class CommentsController(ICommentRepository commentRepository) : Controll
         try
         {
             await commentRepository.DeleteAsync(commentId);
-            return Ok();
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound($"Comment {commentId} not found.");
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
-            return NotFound(e.Message);
+            return StatusCode(500, "Unexpected error.");
         }
     }
     

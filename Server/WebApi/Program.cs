@@ -3,11 +3,10 @@ using RepositoryContracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Services
 builder.Services.AddControllers();
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddEndpointsApiExplorer(); // fine to keep
+builder.Services.AddOpenApi();              // built-in OpenAPI (no Swashbuckle)
 
 builder.Services.AddScoped<IPostRepository, PostFileRepository>();
 builder.Services.AddScoped<IUserRepository, UserFileRepository>();
@@ -15,14 +14,15 @@ builder.Services.AddScoped<ICommentRepository, CommentFileRepository>();
 
 var app = builder.Build();
 
+// Pipeline
+//app.UseHttpsRedirection();
 app.MapControllers();
-
-if(app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    // Serves the OpenAPI JSON at /openapi/v1.json
+    app.MapOpenApi();
+}
 
 app.Run();

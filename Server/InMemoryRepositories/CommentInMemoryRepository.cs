@@ -16,7 +16,7 @@ public class CommentInMemoryRepository : ICommentRepository
         return Task.FromResult(comment);    
     }
 
-    public Task UpdateAsync(Comment comment)
+    public Task<Comment> UpdateAsync(Comment comment)
     {
         Comment? existingComment = comments.SingleOrDefault(c => c.Id == c.Id);
         if (existingComment is null)
@@ -28,7 +28,7 @@ public class CommentInMemoryRepository : ICommentRepository
         comments.Remove(existingComment);
         comments.Add(comment);
 
-        return Task.CompletedTask;    
+        return Task.FromResult(comment); 
     }
 
     public Task DeleteAsync(int id)

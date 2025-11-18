@@ -28,7 +28,7 @@ public class CommentFileRepository : ICommentRepository
         return comment;
     }
 
-    public async Task UpdateAsync(Comment comment)
+    public async Task<Comment> UpdateAsync(Comment comment)
     {
         string commentAsJson = await File.ReadAllTextAsync(filePath);
         List<Comment> comments = JsonSerializer.Deserialize<List<Comment>>(commentAsJson) !;
@@ -42,6 +42,7 @@ public class CommentFileRepository : ICommentRepository
         comments.Add(comment);
         commentAsJson = JsonSerializer.Serialize(comments);
         await File.WriteAllTextAsync(filePath, commentAsJson);
+        return comment;
     }
 
     public async Task DeleteAsync(int id)

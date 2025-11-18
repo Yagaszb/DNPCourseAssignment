@@ -27,7 +27,7 @@ public class UserFileRepository : IUserRepository
         return user;
     }
 
-    public async Task UpdateAsync(User user)
+    public async Task<User> UpdateAsync(User user)
     {
         string userAsJson = await File.ReadAllTextAsync(filePath);
         List<User> users = JsonSerializer.Deserialize<List<User>>(userAsJson) !;
@@ -41,6 +41,7 @@ public class UserFileRepository : IUserRepository
         users.Add(user);
         userAsJson = JsonSerializer.Serialize(users);
         await File.WriteAllTextAsync(filePath, userAsJson);
+        return user;
     }
 
     public async Task DeleteAsync(int id)
