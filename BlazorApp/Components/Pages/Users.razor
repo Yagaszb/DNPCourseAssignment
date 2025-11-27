@@ -70,28 +70,23 @@ else
     
     private async Task GetUsers()
     {
-        await JS.InvokeVoidAsync("console.log", "Loading users from Blazor Server…");
         users = (await UserService.GetAllUsersAsync())
             .OrderBy(u => u.Id)
             .ToList();
-        await JS.InvokeVoidAsync("console.log", $"Loaded {users.Count} users");
     }
 
     private async Task AddUser()
     {
-        await JS.InvokeVoidAsync("console.log", "Creating user from Blazor Server…");
         var newUser = new CreateUserDTO
         {
             UserName = createUserUserName,
             Password = createUserPassword
         };
         var createdUser = await UserService.AddUserAsync(newUser);
-        await JS.InvokeVoidAsync("console.log", $"Created user with ID {createdUser.Id}");
         await GetUsers();
     }
     private async Task EditUser(UserDTO user)
     {
-        await JS.InvokeVoidAsync("console.log", "Edit user clicked");
         if (selectedUser is null)
         {
             selectedUser = user;
@@ -104,7 +99,6 @@ else
     
     private async Task SaveEditedUser()
     {
-        await JS.InvokeVoidAsync("console.log", "Saving edited user from Blazor Server…");
         var updateUser = new UpdateUserDTO
         {
             Id = selectedUser.Id,
@@ -112,16 +106,13 @@ else
             Password = editUserPassword
         };
         var updatedUser = await UserService.UpdateUserAsync(updateUser.Id, updateUser);
-        await JS.InvokeVoidAsync("console.log", $"Updated user with ID {updatedUser.Id}");
         selectedUser = null;
         await GetUsers();
     }
 
     private async Task DeleteUser(UserDTO user)
     {
-        await JS.InvokeVoidAsync("console.log", "Deleting user from Blazor Server...");
         await UserService.DeleteUserAsync(user.Id);
-        await JS.InvokeVoidAsync("console.log", $"Deleted user with ID {user.Id}");
         await GetUsers();
     }
 }

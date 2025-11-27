@@ -1,5 +1,7 @@
+using BlazorApp.Auth;
 using BlazorApp.Components;
 using BlazorApp.Service;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,14 @@ builder.Services.AddHttpClient<IPostService, HttpPostService>(c =>
     c.BaseAddress = new Uri("https://localhost:7144/"));
 builder.Services.AddHttpClient<ICommentService, HttpCommentService>(c =>
     c.BaseAddress = new Uri("https://localhost:7144/"));
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("https://localhost:7144/")
+});
+
+// 🔑 Correct lifetime for auth provider
+builder.Services.AddScoped<AuthenticationStateProvider, SimpleAuthProvider>();
+builder.Services.AddAuthorizationCore();
 
 /*builder.Services.AddScoped<IUserService, HttpUserService>();
 builder.Services.AddScoped<IPostService, HttpPostService>();
