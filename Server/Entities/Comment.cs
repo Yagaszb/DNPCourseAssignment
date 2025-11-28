@@ -4,26 +4,27 @@ public class Comment
 {
     public int Id { get; set; }
     public string Body { get; set; }
+
+    // FKs
     public int PostId { get; set; }
     public int UserId { get; set; }
 
-    public Comment()
-    {
-        
-    }
-    
-    public Comment(string commentBody, int commentPostId, int commentUserId)
-    {
-        Body = commentBody;
-        PostId = commentPostId;
-        UserId = commentUserId;
-    }
+    // Navigation properties
+    public Post Post { get; set; }
+    public User User { get; set; }
 
-    public Comment(int postId, int userId, string body, int id)
+    private Comment() { }    // for EFC
+
+    public Comment(string body, int postId, int userId)
     {
+        Body = body;
         PostId = postId;
         UserId = userId;
-        Body = body;
+    }
+
+    public Comment(int id, string body, int postId, int userId)
+        : this(body, postId, userId)
+    {
         Id = id;
     }
 }

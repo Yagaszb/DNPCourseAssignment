@@ -130,12 +130,9 @@ public class PostsController(IPostRepository postRepository) : ControllerBase
         
         try
         {
-            Post post = new()
+            Post post = new(postToUpdate.Title, postToUpdate.Body, postToUpdate.UserId)
             {
-                Id = postToUpdate.PostId,
-                Title = postToUpdate.Title,
-                Body = postToUpdate.Body,
-                UserId = postToUpdate.UserId
+                Id = postToUpdate.PostId
             };
             await postRepository.UpdateAsync(post);
             PostDTO postDTO = new()
@@ -162,12 +159,7 @@ public class PostsController(IPostRepository postRepository) : ControllerBase
     {
         try
         {
-            Post post = new()
-            {
-                Title = postToAdd.Title,
-                Body = postToAdd.Body,
-                UserId = postToAdd.UserId
-            };
+            Post post = new(postToAdd.Title, postToAdd.Body, postToAdd.UserId);
             Post created = await postRepository.AddAsync(post);
             PostDTO response = new()
             {
